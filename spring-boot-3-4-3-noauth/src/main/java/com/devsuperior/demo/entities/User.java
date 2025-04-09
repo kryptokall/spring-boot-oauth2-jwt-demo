@@ -1,15 +1,16 @@
 package com.devsuperior.demo.entities;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
+import com.devsuperior.demo.projections.UserDetailsProjection;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "tb_user")
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,6 +35,14 @@ public class User {
         this.name = name;
         this.email = email;
         this.password = password;
+    }
+
+    public User(List<UserDetailsProjection> result) {
+        setEmail(result.getFirst().getUsername());
+        setPassword(result.getFirst().getPassword());
+        for (UserDetailsProjection projection : result) {
+            addRole(new Role(projection.getRoleId(), projection.getAuthority()));
+        }
     }
 
     public Long getId() {
@@ -66,6 +75,36 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return UserDetails.super.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return UserDetails.super.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return UserDetails.super.isEnabled();
     }
 
     public void addRole(Role role) {
